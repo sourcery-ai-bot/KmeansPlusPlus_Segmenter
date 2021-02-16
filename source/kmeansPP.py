@@ -13,10 +13,10 @@ class kmeansPP:
         
 
     def euclidieanDistance(self,point1,point2):
-        sum_=0
-        for ch in range(self.channels):
-            sum_+=( ( int(point1[ch]) - int(point2[ch]) )**2 )
-        return sum_ 
+        return sum(
+            ((int(point1[ch]) - int(point2[ch])) ** 2)
+            for ch in range(self.channels)
+        ) 
 
 
     # kmeans++ initialization takes place here
@@ -25,8 +25,8 @@ class kmeansPP:
 
     def initCentroids(self,image):
         centroids=[image[np.random.randint(0,self.rows)][np.random.randint(0,self.cols)]]
-        
-        for center in range(self.k-1):
+
+        for _ in range(self.k-1):
             candidate_distance=0
             candidate_rgb=[]
             for x in range(self.rows):
@@ -43,7 +43,7 @@ class kmeansPP:
                         candidate_rgb=rgb
                         candidate_distance=tmp_dist
             centroids.append(candidate_rgb)
-        
+
         self.centroids=centroids
     
     # train kmeans here
@@ -52,15 +52,13 @@ class kmeansPP:
     def train(self,image):
         init_segments={}
         counts={}
-        error=0
-
         for center in self.centroids:
             counts[tuple(center)]=0
-            if(self.channels==3):
-                init_segments[tuple(center)]=[0,0,0]
-            elif(self.channels==1):
+            if self.channels == 1:
                 init_segments[center]=0
 
+            elif self.channels == 3:
+                init_segments[tuple(center)]=[0,0,0]
         for x in range(self.rows):
             for y in range(self.cols):
                 dist=self.max_int
@@ -72,7 +70,7 @@ class kmeansPP:
                         center_point=center
                 init_segments[tuple(center_point)]=[x+y for x,y in zip(init_segments[tuple(center_point)],image[x][y])]
                 counts[tuple(center_point)]+=1
-        
+
         for center in self.centroids:
             if(self.channels==1):
                 init_segments[tuple(center)]=init_segments[tuple(center)][0]//counts[tuple(center)]
@@ -83,10 +81,13 @@ class kmeansPP:
 
         old_centroids=self.centroids.copy()
         self.centroids=list(init_segments.values()).copy()
-        
-        for count,center in enumerate( old_centroids ):
-            error+=sum( [ abs(x-y) for x,y in zip(center,self.centroids[count]) ] )
-        
+
+        error = sum(
+            sum(abs(x - y) for x, y in zip(center, self.centroids[count]))
+            for count, center in enumerate(old_centroids)
+        )
+
+
         self.error=error
 
     # segmentation takes place here
